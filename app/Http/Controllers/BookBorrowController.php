@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\BookBorrow;
+use App\Models\BookBorrowDetails;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\DB;
@@ -12,34 +13,42 @@ class BookBorrowController extends Controller
     //create data start 
     public function store(Request $request)
     {
+        //request data to use
         $validator = Validator::make($request->all(), [
             'student_id' => 'required',
             'date_of_borrowing' => 'required',
-            'date_of_returning'  => 'required'
+            'date_of_returning'  => 'required',
+            'detail' => 'required'
         ]);
 
         if($validator->fails()){
             return Response() -> json($validator->errors());
         }
 
-        $store = BookBorrow::create([
-            'student_id' => $request->student_id,
-            'date_of_borrowing' => $request->date_of_borrowing,
-            'date_of_returning' => $request->date_of_returning
-        ]);
+        $borrow = new BookBorrow();
+        $borrow->student_id = $request->student_id;
+        $borrow->date_of_borrowing = $request->date_of_borrowing;
+        $borrow->date_of_returning = $request->date_of_returning;
+        $borrow->save();
 
-        $data = BookBorrow::where('student_id', '=', $request->student_id)->get();
-        if($store){
+        //insert detail peminjaman
+        for($i = 0; $i < count($request->detail); $i++){
+            $borrow_detail = new BookBorrowDetails();
+            $borrow_detail->book_borrow_id = $borrow->book_borrow_id;
+            $borrow_detail->book_id = $request->detail[$i]['book_id'];
+            $borrow_detail->qty = $request->detail[$i]['qty'];
+            $borrow_detail->save();
+        }
+
+        if($borrow && $borrow_detail){
             return Response() -> json([
                 'status' => 1,
-                'message' => 'Succes create new data!',
-                'data' => $data
+                'message' => 'Success!'
             ]);
-        }else
-        {
+        } else {
             return Response() -> json([
                 'status' => 0,
-                'message' => 'Failed create new data!'
+                'message' => 'Failed!'
             ]);
         }
     }
@@ -47,7 +56,7 @@ class BookBorrowController extends Controller
 
     //read data start
     public function show(){
-        return BookBorrow::all();
+        return BookBorrow::with(['student', 'student.class'])->get();
     }
 
     public function detail($id){

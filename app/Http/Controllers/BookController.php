@@ -18,13 +18,54 @@ class BookController extends Controller
     //greet user end
 
     //create data start
+    public function upload_book_cover(Request $request, $id)
+    {
+        $validator = Validator::make($request->all(),
+            [
+                'book_cover' => 'required|image|mimes:jpeg,png,jpg|max:2048',
+            ]
+        );
+
+        if($validator -> fails()) {
+            return Response() -> json($validator->errors());
+        }
+
+        //define nama file yg akan diupload
+        $imageName = time().'.'.$request->book_cover->extension();
+
+        //proses upload
+        $request->book_cover->move(public_path('images'), $imageName);
+
+        $update=DB::table('book')
+                    ->where('book_id', '=', $id)
+                    ->update([
+                        'image' => $imageName
+                    ]);
+
+        $data = Book::where('book_id', '=', $id)-> get();
+        if($update){
+            return Response() -> json([
+                'status' => 1,
+                'message' => 'Succes upload book cover!',
+                'data' => $data
+            ]);
+        } else 
+        {
+            return Response() -> json([
+                'status' => 0,
+                'message' => 'Failed upload boo cover!'
+            ]);
+        }
+    }
+    //create data end
+
     public function store(Request $request)
     {
         $validator = Validator::make($request->all(),
             [
                 'book_name' => 'required',
                 'author' => 'required',
-                'desc' => 'required'
+                'desc' => 'required',
             ]
         );
 
@@ -35,7 +76,7 @@ class BookController extends Controller
         $store = Book::create([
             'book_name' =>$request->book_name,
             'author' => $request->author,
-            'desc' => $request->desc
+            'desc' => $request->desc,
         ]);
 
         $data = Book::where('book_name', '=', $request->book_name)-> get();
@@ -53,7 +94,6 @@ class BookController extends Controller
             ]);
         }
     }
-    //create data end
 
     //read data start
     public function show(){

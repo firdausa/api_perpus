@@ -18,17 +18,17 @@ class UserController extends Controller
 
         try{
             if( ! $token = JWTAuth::attempt($credentials)) {//jwt auth akan mengquery/cek apakah ada atau tidak
-                return response()->json(['error' => 'Invalid credentials'], 400);
+                return response()->json(['message' => 'Invalid credentials'], 200);
             }
         }catch(JWTException $e) {
-            return response()->json(['error' => 'Couldnt create token'], 500);
+            return response()->json(['message' => 'Couldnt create token'], 200);
         }
 
         $data = User::where('email', '=', $request->email)-> get();
         return response()->json([
             'status' => 1,
             'message' => 'Succes login!',
-            'token' => compact('token'),
+            'token' => $token,
             'data' => $data
         ]);
     }
@@ -78,6 +78,12 @@ class UserController extends Controller
             return Response()->json(['token_absent'], 401);
         }
 
-        return Response()->json(compact('user'));//return tabel user
+        //return Response()->json(compact('user'));//return tabel user
+
+        return response()->json([
+            'status' => 1,
+            'message' => 'Succes login!',
+            'data' => $user
+        ]);
     }
 }
